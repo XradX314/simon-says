@@ -40,6 +40,8 @@ typedef union{
     uint8_t byte;
 }_uByte;
 
+typedef void (*OnButton)(void *button_param);
+
 typedef enum{
     UP,
     FALLING,
@@ -59,7 +61,8 @@ typedef struct
     e_estados estado;
     uint8_t index;    
     uint32_t press_time;
-
+    OnButton button_function;
+    void *button_param;
 }_boton;
 
 typedef struct{
@@ -77,6 +80,7 @@ uint8_t length;
 #define interval 100
 #define LIMIT 0x0F
 #define BUTTON_FLAG flags.bits.bit0
+#define BUTTON_FREQ 40
 /* END define ----------------------------------------------------------------*/
 
 /* hardware configuration ----------------------------------------------------*/
@@ -114,7 +118,7 @@ uint8_t mask=0;
 const uint8_t secuencia_inicio[7]={
     1,3,2,6,4,12,8
 };
-e_simon simon;
+e_simon simon=INTRO;
 
 
 /* END Global variables ------------------------------------------------------*/
@@ -182,8 +186,8 @@ void set_led(_seq *secuencia){
     }
 }
 
-void simon_task(e_simon sim){
-    switch (sim)
+void simon_task(e_simon *sim){
+    switch (*sim)
     {
     case INTRO:
         set_led(&inicio);
@@ -207,7 +211,7 @@ int main()
     flags.byte=0;
     BUT.mode(PullUp);
     inicio.secuencia=(uint8_t*)secuencia_inicio;
-    inicio.intervalo=500;
+    inicio.intervalo=200;
     inicio.index=0;  
     inicio.length=(sizeof(secuencia_inicio)/sizeof(secuencia_inicio[0])) ; 
     uint32_t timerboton=0;
@@ -221,7 +225,7 @@ int main()
     }
 
     while(1){
-            if((mytimer1.read_ms()-timerboton)>40){
+            if((mytimer1.read_ms()-timerboton)>BUTTON_FREQ){
                 timerboton=mytimer1.read_ms();
                 sense_boton(&boton[0]);
                 sense_boton(&boton[1]);
@@ -229,7 +233,7 @@ int main()
                 sense_boton(&boton[3]);
             }
 
-    
+        simon_task(&simon);
 
     	
     }
